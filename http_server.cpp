@@ -1,9 +1,21 @@
 #include <asm-generic/socket.h> 
+#include <asm-generic/socket.h> 
+#include <asm-generic/socket.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <unistd.h> 
 #include <cstring> 
 #include <iostream> 
+#include <chrono>
+#include "threadpool.hpp"
+#include <thread>
+
+void server_work(){
+    
+  for (int i=0;i<10;i++){
+  std::cout<<"Connection established "<<i<<std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+}}
 
 int main(){ 
 
@@ -27,7 +39,10 @@ int main(){
   //makes the server open to connect to requests, can have at most 10 requests in queue
   listen(server_fd,10);
   
-  while (true){
+
+  ThreadPool threadpool(2);
+  int task=0;
+  while (task<3){
 
       sockaddr_in client_addr{};
       socklen_t client_len = sizeof(client_addr);
@@ -37,8 +52,11 @@ int main(){
   //accept blocks the server until a client connection is made
   //once made, the connection is handed off to a different socket, which is the client_fd
   int client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
-  std::cout<<"Connection established"<<std::endl;
+
+threadpool.add_task([]{server_work();});
+task++;
   close(client_fd);
+    }
+  threadpool.done_with_tasks();
   }
-}
 
