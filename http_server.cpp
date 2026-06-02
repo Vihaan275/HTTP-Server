@@ -20,6 +20,10 @@ void server_work(){
 int main(){ 
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0); 
+    if (server_fd==-1){
+        std::cout<<"Error"<<std::endl;
+        return 1;
+    }
     //makes the file descriptor that can be used for the connection between two sockets.
 
 
@@ -34,10 +38,14 @@ int main(){
   addr.sin_port = htons(8080);//give it port 8080, htons does conversion from bigendian to littlendian to make sure there are no problems with sending data
     
   //binds a socket to the specified address, and cast address into sockaddress because that is the type of struct that the bind function requires
-  bind(server_fd,(sockaddr*)&addr,sizeof(addr));
+ if ( bind(server_fd,(sockaddr*)&addr,sizeof(addr)) == -1){
+    std::cout<<"Server binding failed"<<std::endl;
+ }
   
   //makes the server open to connect to requests, can have at most 10 requests in queue
-  listen(server_fd,10);
+  if (listen(server_fd,10) == -1){
+    std::cout<<"listener failed"<<std::endl;
+  }
   
 
   ThreadPool threadpool(2);
@@ -52,6 +60,10 @@ int main(){
   //accept blocks the server until a client connection is made
   //once made, the connection is handed off to a different socket, which is the client_fd
   int client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
+  if (client_fd==-1){
+      break;
+      std::cout<<"Couldnt accept connection"<<std::endl;
+  }
 
 threadpool.add_task([]{server_work();});
 task++;
