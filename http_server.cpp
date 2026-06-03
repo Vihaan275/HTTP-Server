@@ -3,6 +3,7 @@
 #include <asm-generic/socket.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
+#include <arpa/inet.h>
 #include <unistd.h> 
 #include <cstring> 
 #include <iostream> 
@@ -10,11 +11,12 @@
 #include "threadpool.hpp"
 #include <thread>
 
-void server_work(){
+void server_work(int client_fd){
     
   for (int i=0;i<10;i++){
   std::cout<<"Connection established "<<i<<std::endl;
   std::this_thread::sleep_for(std::chrono::seconds(1));
+  close(client_fd);
 }}
 
 int main(){ 
@@ -34,8 +36,9 @@ int main(){
   //basically writing out the full address needed for connecting to the ports
   sockaddr_in addr{};//make an address object 
   addr.sin_family = AF_INET;//make sure it is an ipv4 address
-  addr.sin_addr.s_addr = INADDR_ANY;//give it any ip that is avliable
+  
   addr.sin_port = htons(8080);//give it port 8080, htons does conversion from bigendian to littlendian to make sure there are no problems with sending data
+  inet_pton(AF_INET,"127.0.0.1",&addr.sin_addr);
     
   //binds a socket to the specified address, and cast address into sockaddress because that is the type of struct that the bind function requires
  if ( bind(server_fd,(sockaddr*)&addr,sizeof(addr)) == -1){
@@ -50,7 +53,7 @@ int main(){
 
   ThreadPool threadpool(2);
   int task=0;
-  while (task<3){
+  while (task<30){
 
       sockaddr_in client_addr{};
       socklen_t client_len = sizeof(client_addr);
@@ -61,13 +64,11 @@ int main(){
   //once made, the connection is handed off to a different socket, which is the client_fd
   int client_fd = accept(server_fd, (sockaddr*)&client_addr, &client_len);
   if (client_fd==-1){
-      break;
       std::cout<<"Couldnt accept connection"<<std::endl;
   }
 
-threadpool.add_task([]{server_work();});
+threadpool.add_task([client_fd]{server_work(client_fd);});
 task++;
-  close(client_fd);
     }
   threadpool.done_with_tasks();
   }
