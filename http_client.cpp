@@ -22,6 +22,9 @@ int main(){
 }
   std::cout<<"Connected to server"<<std::endl;
 
+    char message[] = "HI! WHATS UP!!";
+    send(client_fd,message,sizeof(message),0);
+
   close(client_fd);
 
   return 0;

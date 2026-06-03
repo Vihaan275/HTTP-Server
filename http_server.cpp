@@ -12,6 +12,11 @@
 #include <thread>
 
 void server_work(int client_fd){
+
+    char message_recieved[4096];
+    recv(client_fd,message_recieved,sizeof(message_recieved),0);
+
+    std::cout<<message_recieved<<std::endl;
     
   for (int i=0;i<10;i++){
   std::cout<<"Connection established "<<i<<std::endl;
