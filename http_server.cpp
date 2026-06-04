@@ -10,19 +10,49 @@
 #include <chrono>
 #include "threadpool.hpp"
 #include <thread>
+#include <string>
+#include <bits/stdc++.h>
 
 void server_work(int client_fd){
 
     char message_recieved[4096];
-    recv(client_fd,message_recieved,sizeof(message_recieved),0);
+    std::string request;
 
-    std::cout<<message_recieved<<std::endl;
+    while (true){
+
+    if (recv(client_fd,message_recieved,sizeof(message_recieved),0)==-1){
+        std::cout<<"Error in getting a message"<<std::endl;
+        break;
+    }
+
+    request.append(message_recieved);
+    if (request.find("\r\n\r\n") != std::string::npos){
+        break;
+        std::cout<<"Reached the end of the message"<<std::endl;
+    }
+    }
+    std::cout<<request<<std::endl;
+
+    std::string html =
+    "<html><body><h1>Hello World!</h1></body></html>";
+
+    std:: string message_to_send = "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: "+std::to_string(html.size())+"\r\n\r\n"+html;
+
+    char* message = new char[message_to_send.size()]();
+    for (int i=0;i<message_to_send.size();i++){
+        message[i] = message_to_send[i];
+    }
+        
+    if (request.substr(0,3)=="GET"){
+        send(client_fd,message,sizeof(message_to_send),0);
+    }
+
+    delete[] message;
+
     
-  for (int i=0;i<10;i++){
-  std::cout<<"Connection established "<<i<<std::endl;
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  close(client_fd);
-}}
+}
 
 int main(){ 
 
