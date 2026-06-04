@@ -44,6 +44,7 @@ void server_work(int client_fd){
     std::cout<<html.size()<<std::endl;
 
     //if (request.substr(0,3)=="GET"){
+    std::this_thread::sleep_for(std::chrono::seconds(10));
         if (send(client_fd,message_to_send.c_str(),(message_to_send).size(),0)==-1){
             std::cout<<"Error in sending packets"<<std::endl;
     
