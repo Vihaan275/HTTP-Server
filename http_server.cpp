@@ -1,6 +1,4 @@
 #include <asm-generic/socket.h> 
-#include <asm-generic/socket.h> 
-#include <asm-generic/socket.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <arpa/inet.h>
@@ -23,19 +21,25 @@ void server_work(int client_fd){
     std::string request;
 
     while (true){
+    int bytes_received =
+    recv(client_fd,
+         message_recieved,
+         sizeof(message_recieved),
+         0);
 
-    if (recv(client_fd,message_recieved,sizeof(message_recieved),0)==-1){
-        std::cout<<"Error in getting a message"<<std::endl;
-        break;
-    }
+    if (bytes_received <= 0)
+{
+    std::cout << "Error in getting a message" << std::endl;
+    break;
+}
 
-    request.append(message_recieved);
+request.append(message_recieved, bytes_received);
+
     if (request.find("\r\n\r\n") != std::string::npos){
         break;
-        std::cout<<"Reached the end of the message"<<std::endl;
     }
     }
-    std::cout<<request<<std::endl;
+    //std::cout<<request<<std::endl;
 
     std::string html = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
     
@@ -87,10 +91,10 @@ int main(){
     std::cout<<"listener failed"<<std::endl;
   }
   
-
+//DETERMINE THREAD COUNT, MASSIVE PERFORMANCE AFFECTOR
   ThreadPool threadpool(2);
   int task=0;
-  while (task<30){
+  while (true){
 
       sockaddr_in client_addr{};
       socklen_t client_len = sizeof(client_addr);
