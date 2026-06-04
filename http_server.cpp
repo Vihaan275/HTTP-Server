@@ -12,9 +12,13 @@
 #include <thread>
 #include <string>
 #include <bits/stdc++.h>
+#include <fstream>
 
 void server_work(int client_fd){
 
+    //getting html file to display to the browser
+    std::string file_path = "./index.html";
+    std::ifstream file(file_path);
     char message_recieved[4096];
     std::string request;
 
@@ -33,8 +37,8 @@ void server_work(int client_fd){
     }
     std::cout<<request<<std::endl;
 
-    std::string html =
-    "<html><body><h1>Hello World!</h1></body></html>";
+    std::string html = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
+    
 
     std:: string message_to_send = "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
