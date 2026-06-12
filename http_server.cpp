@@ -11,12 +11,23 @@
 #include <string>
 #include <bits/stdc++.h>
 #include <fstream>
+#include <sys/sendfile.h>
+#include <fcntl.h>
+std::string file_path = "./index.html";
+int file_fd = open("./index.html",O_RDONLY);
+std::ifstream file(file_path);
 
+std::string html = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
+int file_size = html.size();
+std::string file_siz = std::to_string(file_size);
+
+    std:: string message_to_send = "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: "+file_siz+"\r\n"
+        "Connection: close\r\n"
+        "\r\n";
 void server_work(int client_fd){
 
-    //getting html file to display to the browser
-    std::string file_path = "./index.html";
-    std::ifstream file(file_path);
     char message_recieved[4096];
     std::string request;
 
@@ -27,7 +38,7 @@ void server_work(int client_fd){
          sizeof(message_recieved),
          0);
 
-    if (bytes_received <= 0)
+    if (bytes_received < 0)
 {
     std::cout << "Error in getting a message" << std::endl;
     break;
@@ -41,15 +52,11 @@ request.append(message_recieved, bytes_received);
     }
     //std::cout<<request<<std::endl;
 
-    std::string html = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
     
+//sending content header first
 
-    std:: string message_to_send = "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: "+std::to_string(html.size())+"\r\n\r\n"+html;
-
-    std::cout<<(message_to_send)<<std::endl;
-    std::cout<<html.size()<<std::endl;
+//    std::cout<<(message_to_send)<<std::endl;
+//    std::cout<<html.size()<<std::endl;
 
     //if (request.substr(0,3)=="GET"){
         if (send(client_fd,message_to_send.c_str(),(message_to_send).size(),0)==-1){
@@ -57,6 +64,12 @@ request.append(message_recieved, bytes_received);
     
         }
 
+    off_t zero = 0;
+//sending html file to server
+    if (sendfile(client_fd,file_fd,&zero,file_size)==-1){
+            std::cout<<"Error with sending file"<<std::endl;
+    }
+    shutdown(client_fd,SHUT_WR);
     close(client_fd);
     }
 
@@ -87,12 +100,12 @@ int main(){
  }
   
   //makes the server open to connect to requests, can have at most 10 requests in queue
-  if (listen(server_fd,10) == -1){
+  if (listen(server_fd,SOMAXCONN) == -1){
     std::cout<<"listener failed"<<std::endl;
   }
   
 //DETERMINE THREAD COUNT, MASSIVE PERFORMANCE AFFECTOR
-  ThreadPool threadpool(2);
+  ThreadPool threadpool(16);
   int task=0;
   while (true){
 
@@ -107,6 +120,7 @@ int main(){
   if (client_fd==-1){
       std::cout<<"Couldnt accept connection"<<std::endl;
   }
+
 
 threadpool.add_task([client_fd]{server_work(client_fd);});
 task++;
